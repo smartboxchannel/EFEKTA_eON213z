@@ -18,7 +18,7 @@ More info at http://efektalab.com/eON213z
 
 ## V1_R1
 
-![Efekta THP_LR \ THP](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/002.jp) 
+![Efekta THP_LR \ THP](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/002.jpg) 
 
 
 ![Efekta THP_LR \ THP](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/EFEKTA_eON213z.jpg) 
