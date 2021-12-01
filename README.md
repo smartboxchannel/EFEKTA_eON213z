@@ -6,9 +6,9 @@ My new zigbee project. Wireless temperature and humidity mini sensor with electr
 
 #### Donate to me: https://paypal.me/efektalab or just buy to support this project
 
-#### Sale: 
+#### Sale: https://www.tindie.com/products/diyberk/indoor-climate-sensor-efekta-eon213-zigbee/
 
-#### Video: 
+#### Video: https://youtu.be/5huTVfVpZgs
 
 #### Telegram ZigDev - https://t.me/zigdev
 
@@ -20,10 +20,10 @@ More info at http://efektalab.com/eON213z
 
 ## V1_R1
 
-![Efekta THP_LR \ THP](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/002.jpg) 
+![Indoor climate sensor EFEKTA eON213 Zigbee](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/002.jpg) 
 
 
-![Efekta THP_LR \ THP](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/EFEKTA_eON213z.jpg) 
+![Indoor climate sensor EFEKTA eON213 Zigbee](https://github.com/smartboxchannel/EFEKTA_eON213z/blob/main/IMAGES/EFEKTA_eON213z.jpg) 
 
 
 ### How to flash the device
