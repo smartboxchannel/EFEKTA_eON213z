@@ -55,7 +55,6 @@ extern    void WaitUntilIdle(void);
 extern    void EpdReset(void);
 
 extern    void EpdSetFrameMemoryXY(const unsigned char* image_buffer,int x, int y, int image_width, int image_height);
-//extern  void EpdSetFrameMemoryXY(const unsigned char* image_buffer, uint16 x, uint16 y, uint16 image_width, uint16 image_height);
 
 extern    void EpdSetFrameMemory(const unsigned char* image_buffer);
 extern    void EpdSetFrameMemoryBase(const unsigned char* image_buffer);
@@ -70,8 +69,6 @@ extern    void EpdSetLut(const unsigned char *lut);
 extern    void EpdSetLutFull(const unsigned char *lut);
 extern    void EpdSetMemoryArea(int x_start, int y_start, int x_end, int y_end);
 extern    void EpdSetMemoryPointer(int x, int y);
-
-//extern    void DelayMs(unsigned int delaytime);
 
 #endif /* SSD1675_H */
 

@@ -35,9 +35,10 @@ extern    void PaintDrawRectangle(int x0, int y0, int x1, int y1, int colored);
 extern    void PaintDrawFilledRectangle(int x0, int y0, int x1, int y1, int colored);
 extern    void PaintDrawCircle(int x, int y, int radius, int colored);
 extern    void PaintDrawFilledCircle(int x, int y, int radius, int colored);
+extern    void PaintDrawImage(const unsigned char* imgData,int x, int y, int Width, int Height, int colored);
 
 //extern    unsigned char* image[896];
-//extern    unsigned char* image[672];
+extern    unsigned char* image[672];
 extern    int pwidth;
 extern    int pheight;
 extern    int protate;

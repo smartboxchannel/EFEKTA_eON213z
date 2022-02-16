@@ -20,8 +20,7 @@ extern "C" {
 #define APP_REPORT_EVT                  0x0001
 #define APP_READ_SENSORS_EVT            0x0002
 
-#define APP_REPORT_DELAY ((uint32) 60000) //1 min
-
+#define APP_REPORT_DELAY ((uint32) 60000) //60 sec
 
 /*********************************************************************
  * MACROS

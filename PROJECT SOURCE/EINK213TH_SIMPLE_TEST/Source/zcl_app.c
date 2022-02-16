@@ -14,7 +14,6 @@
 #include "zcl_app.h"
 #include "zcl_diagnostic.h"
 #include "zcl_general.h"
-//#include "zcl_lighting.h"
 #include "zcl_ms.h"
 
 #include "bdb.h"
@@ -56,13 +55,7 @@
  */
 #define HAL_KEY_CODE_RELEASE_KEY HAL_KEY_CODE_NOKEY
 
-/*********************************************************************
- * CONSTANTS
- */
-
-/*********************************************************************
- * TYPEDEFS
- */
+#define myround(x) ((int)((x)+0.5))
 
 /*********************************************************************
  * GLOBAL VARIABLES
@@ -72,16 +65,12 @@ extern bool requestNewTrustCenterLinkKey;
 byte zclApp_TaskID;
 
 /*********************************************************************
- * GLOBAL FUNCTIONS
- */
-
-/*********************************************************************
  * LOCAL VARIABLES
  */
 bool firstLoop = true;
 bool changeData = false;
 static uint8 currentSensorsReadingPhase = 0;
-int16 colorPrint = 0x00;  // 00 - black on white, ff -  white on black
+int16 colorPrint = 0x00;  // 00 - black on white, ff -  white on black, ..still not implemented, no time :(
 int16 temp_old = 0;
 int16 tempTr = 33;
 uint16 hum_old = 0;
@@ -99,9 +88,20 @@ bool downHum;
 uint16 last_hum = 0;;
 uint8 loopCount = 5;
 
+uint16 einkTemp;
+uint16 einkHum;
 
+void graphData(uint16 temp, uint16 hum);
+void epdGraphData(void);
+int massDataT[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint16 numDataT;
+int numMassDataT = 0;
+uint32 amountDataT;
 
-
+int massDataH[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint16 numDataH;
+int numMassDataH = 0;
+uint32 amountDataH;
 
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -111,6 +111,8 @@ static void zclApp_Report(void);
 
 static void zclApp_ReadSensors(void);
 static void zclApp_TempHumiSens(void);
+
+void conveyor(int *Arr, int n, int l);
 
 void EpdRefresh(void);
 void EpdStart(void);
@@ -156,6 +158,7 @@ void zclApp_Init(byte task_id) {
     RegisterForKeys(zclApp_TaskID);
     
     LREP("Started build %s \r\n", zclApp_DateCodeNT);
+    HalLedSet(HAL_LED_1, HAL_LED_MODE_BLINK);
     zclApp_ReadSensors();
     
     osal_start_reload_timer(zclApp_TaskID, APP_REPORT_EVT, APP_REPORT_DELAY);
@@ -188,7 +191,6 @@ uint16 zclApp_event_loop(uint8 task_id, uint16 events) {
     }
 
     if (events & APP_REPORT_EVT) {
-        osal_start_reload_timer(zclApp_TaskID, APP_REPORT_EVT, APP_REPORT_DELAY);
         LREPMaster("APP_REPORT_EVT\r\n");
         zclApp_Report();
         return (events ^ APP_REPORT_EVT);
@@ -218,9 +220,9 @@ static void zclApp_HandleKeys(byte portAndAction, byte keyCode) {
         LREPMaster("Key press\r\n");
         
         if (bdbAttributes.bdbNodeIsOnANetwork){
-        osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 1000);
+        osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 100);
         }else{
-          osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 2000);
+          osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 1000);
         }
         pushBut = true;
     }
@@ -234,18 +236,17 @@ static void zclApp_ReadSensors(void) {
      * FYI: split reading sensors into phases, so single call wouldn't block processor
      * for extensive ammount of time
      * */
-    HalLedSet(HAL_LED_1, HAL_LED_MODE_BLINK);
     switch (currentSensorsReadingPhase++) {  
     case 0:
-      if(startWork <= 5){
+      if(startWork <= 2){
         startWork++;
         zclBattery_Report();
         pushBut = true;
       }
       
-      if(startWork == 6){
+      if(startWork == 3){
       sendBattCount++;
-      if(sendBattCount == 3){
+      if(sendBattCount == 720){
         zclBattery_Report();
         sendBattCount = 0;
         pushBut = true;
@@ -271,7 +272,7 @@ static void zclApp_ReadSensors(void) {
         break;
     }
     if (currentSensorsReadingPhase != 0) {
-        osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 200);
+        osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 20);
     }
 }
 
@@ -289,6 +290,12 @@ static void zclApp_TempHumiSens(void) {
   sleep_sensor();
   zclApp_Temperature_Sensor_MeasuredValue = (int16)(t*100);
   zclApp_HumiditySensor_MeasuredValue = (uint16)(h*100);
+  
+  einkTemp = myround(t*10.0);
+  einkHum = (uint16)myround(h);
+  
+  graphData(einkTemp, einkHum);
+  
     if(!pushBut){
     if (abs(zclApp_Temperature_Sensor_MeasuredValue - temp_old) >= tempTr) {
         temp_old = zclApp_Temperature_Sensor_MeasuredValue;
@@ -314,22 +321,36 @@ static void zclApp_TempHumiSens(void) {
       
       LREP("ReadIntTempSens t=%d\r\n", zclApp_HumiditySensor_MeasuredValue);
       bdb_RepChangedAttrValue(zclApp_FirstEP.EndPoint, HUMIDITY, ATTRID_MS_RELATIVE_HUMIDITY_MEASURED_VALUE);
-      
       changeData = true;
     }
 }
 
 
 
-static void zclApp_Report(void) { osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 200); }
+static void zclApp_Report(void) { osal_start_timerEx(zclApp_TaskID, APP_READ_SENSORS_EVT, 20); }
 
 
 /****************************************************************************
+// E-ink display
 ****************************************************************************/
-
+void EpdStart(void)
+{
+    EpdInitFull();
+    EpdSetFrameMemory(LOGO);
+    EpdDisplayFrame();
+    user_delay_ms(1000);
+    EpdSetFrameMemory(ESPEC);
+    EpdDisplayFrame();
+    user_delay_ms(3000);
+    first = true;
+    EpdSleep(); 
+}
 
 void EpdRefresh(void)
 {
+  unsigned char image[672];
+  PaintPaint(image, 0, 0);
+  
   EpdReset();
   if(first == true){
     EpdClearFrameMemoryF(0xFF);
@@ -354,10 +375,11 @@ void EpdRefresh(void)
       EpdInitPartial();
     }
  
-  epdTemperatureData(zclApp_Temperature_Sensor_MeasuredValue);
-  epdHumidityData(zclApp_HumiditySensor_MeasuredValue);
+  epdTemperatureData(einkTemp);
+  epdHumidityData(einkHum);
   epdZigbeeStatusData();
   epdBatteryData(zclBattery_PercentageRemainig/2);
+  epdGraphData();
 
   if(loopCount == 0){
   loopCount = 5;
@@ -373,86 +395,522 @@ void EpdRefresh(void)
 }
 
 
-void EpdStart(void)
-{
-EpdInitFull();
-
-    EpdSetFrameMemory(LOGO);
-    EpdDisplayFrame();
-    user_delay_ms(2000);
-    
-    EpdSetFrameMemory(ESPEC);
-    EpdDisplayFrame();
-    user_delay_ms(6000);
- 
-    first = true;
-    EpdSleep(); 
-}
-
-
-
 void epdTemperatureData(uint16 tt) {
   
-//temperature
-  char temp_string[] = {'0', '0', '.', '0', '0', ' ', ' ','^', 'C','\0'};
-  temp_string[0] = tt / 1000 % 10 + '0';
-  temp_string[1] = tt / 100 % 10 + '0';
-  temp_string[3] = tt / 10 % 10 + '0';
-  temp_string[4] = tt % 10 + '0';
+  byte one_t = tt / 100;
+  byte two_t = tt % 100 / 10;
+  byte three_t = tt % 10;
   
-  PaintSetWidth(16);
-  PaintSetHeight(110);
-  PaintSetRotate(ROTATE_90);
-  PaintClear(UNCOLORED);
-  PaintDrawStringAt(0, 0, temp_string, &Font16, COLORED);
-  EpdSetFrameMemoryXY(PaintGetImage(), 79, 90, PaintGetWidth(), PaintGetHeight()); 
+  PaintSetWidth(72);
+  PaintSetHeight(44);
+  PaintSetRotate(ROTATE_180);
+
+    if (one_t == 0) {
+      PaintClear(UNCOLORED);
+      switch (two_t) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 39, PaintGetWidth(), PaintGetHeight());
+      
+    } else {
+      PaintClear(UNCOLORED);
+      switch (one_t) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 10, PaintGetWidth(), PaintGetHeight());
+     
+      PaintClear(UNCOLORED);
+      switch (two_t) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 54, PaintGetWidth(), PaintGetHeight());
+      
+      PaintSetWidth(72);
+      PaintSetHeight(7);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      
+      PaintDrawImage(POINT, 42, 0, 29, 7, COLORED);
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 96, PaintGetWidth(), PaintGetHeight());
+      
+      
+      PaintSetWidth(72);
+      PaintSetHeight(19);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      switch (three_t) {
+        case 0:
+          PaintDrawImage(ZERO_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT_S, 42, 0, 29, 19, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE_S, 42, 0, 29, 19, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 105, PaintGetWidth(), PaintGetHeight());
+      
+      PaintSetWidth(24);
+      PaintSetHeight(22);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      PaintDrawImage(CELSIUS, 4, 0, 16, 22, COLORED);
+      EpdSetFrameMemoryXY(PaintGetImage(), 72, 98, PaintGetWidth(), PaintGetHeight());
+      
+      
+      PaintSetWidth(24);
+      PaintSetHeight(12);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      
+      if (last_tmp != 0) {
+        if (tt > last_tmp) {
+          PaintDrawImage(IMAGE_UP, 5, 0, 14, 12, COLORED);
+          upTemp = true;
+          downTemp = false;
+        } else if (tt < last_tmp) {
+          PaintDrawImage(IMAGE_DOWN, 5, 0, 14, 12, COLORED);
+          upTemp = false;
+          downTemp = true;
+        } else {
+          if (upTemp == true) {
+            PaintDrawImage(IMAGE_UP, 5, 0, 14, 12, COLORED);
+          }
+          if (downTemp == true) {
+            PaintDrawImage(IMAGE_DOWN, 5, 0, 14, 12, COLORED);
+          }
+        }
+      }
+      last_tmp = tt;
+      EpdSetFrameMemoryXY(PaintGetImage(), 100, 75, PaintGetWidth(), PaintGetHeight());
+      
+      PaintSetWidth(24);
+      PaintSetHeight(15);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      PaintDrawImage(I1, 3, 0, 17, 15,  COLORED);
+      EpdSetFrameMemoryXY(PaintGetImage(), 96, 56, PaintGetWidth(), PaintGetHeight());
+    }
   }
 
 
 
 void epdHumidityData(uint16 hh) {
- 
-  //humidity
-  char hum_string[] = {'0', '0', '.', '0', '0', ' ', ' ','%', ' ','\0'};
-  hum_string[0] = hh / 1000 % 10 + '0';
-  hum_string[1] = hh / 100 % 10 + '0';
-  hum_string[3] = hh / 10 % 10 + '0';
-  hum_string[4] = hh % 10 + '0';
   
-  PaintSetWidth(16);
-  PaintSetHeight(110);
-  PaintSetRotate(ROTATE_90);
-  PaintClear(UNCOLORED);
-  PaintDrawStringAt(0, 0, hum_string, &Font16, COLORED);
+  byte one_h = hh / 10;
+  byte  two_h = hh % 10;
+  
+  
+  PaintSetWidth(72);
+  PaintSetHeight(44);
+  PaintSetRotate(ROTATE_180);
 
-  EpdSetFrameMemoryXY(PaintGetImage(), 63, 90, PaintGetWidth(), PaintGetHeight()); 
+    if (one_h == 0) {
+      PaintClear(UNCOLORED);
+      switch (two_h) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 22, 36, PaintGetWidth(), PaintGetHeight());
+      
+    } else {
+      PaintClear(UNCOLORED);
+      switch (one_h) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 142, PaintGetWidth(), PaintGetHeight());
+     
+      PaintClear(UNCOLORED);
+      switch (two_h) {
+        case 0:
+          PaintDrawImage(ZERO, 4, 0, 67, 44, COLORED);
+          break;
+        case 1:
+          PaintDrawImage(ONE, 4, 0, 67, 44, COLORED);
+          break;
+        case 2:
+          PaintDrawImage(TWO, 4, 0, 67, 44, COLORED);
+          break;
+        case 3:
+          PaintDrawImage(THREE, 4, 0, 67, 44, COLORED);
+          break;
+        case 4:
+          PaintDrawImage(FOUR, 4, 0, 67, 44, COLORED);
+          break;
+        case 5:
+          PaintDrawImage(FIVE, 4, 0, 67, 44, COLORED);
+          break;
+        case 6:
+          PaintDrawImage(SIX, 4, 0, 67, 44, COLORED);
+          break;
+        case 7:
+          PaintDrawImage(SEVEN, 4, 0, 67, 44, COLORED);
+          break;
+        case 8:
+          PaintDrawImage(EIGHT, 4, 0, 67, 44, COLORED);
+          break;
+        case 9:
+          PaintDrawImage(NINE, 4, 0, 67, 44, COLORED);
+          break;
+      }
+      EpdSetFrameMemoryXY(PaintGetImage(), 24, 186, PaintGetWidth(), PaintGetHeight());
+      
+      PaintSetWidth(24);
+      PaintSetHeight(22);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      PaintDrawImage(PERCENT, 4, 0, 16, 22, COLORED);
+      EpdSetFrameMemoryXY(PaintGetImage(), 72, 228, PaintGetWidth(), PaintGetHeight());
+      
+      
+      PaintSetWidth(24);
+      PaintSetHeight(12);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      
+      if (last_hum != 0) {
+        if (hh > last_hum) {
+          PaintDrawImage(IMAGE_UP, 5, 0, 14, 12, COLORED);
+          upHum = true;
+          downHum = false;
+        } else if (hh < last_hum) {
+          PaintDrawImage(IMAGE_DOWN, 5, 0, 14, 12, COLORED);
+          upHum = false;
+          downHum = true;
+        } else {
+          if (upHum == true) {
+            PaintDrawImage(IMAGE_UP, 5, 0, 14, 12, COLORED);
+          }
+          if (downHum == true) {
+            PaintDrawImage(IMAGE_DOWN, 5, 0, 14, 12, COLORED);
+          }
+        }
+      }
+      last_hum = hh;
+      EpdSetFrameMemoryXY(PaintGetImage(), 100, 167, PaintGetWidth(), PaintGetHeight());
+      
+      PaintSetWidth(24);
+      PaintSetHeight(15);
+      PaintSetRotate(ROTATE_180);
+      PaintClear(UNCOLORED);
+      PaintDrawImage(I2, 4, 0, 17, 15,  COLORED);
+      EpdSetFrameMemoryXY(PaintGetImage(), 96, 185, PaintGetWidth(), PaintGetHeight());
+      
+  }
 }
 
 
 
  
 void epdBatteryData(uint8 b) {
-
-  //percentage
-  char perc_string[] = {'0', '0', '0', '%', '\0'};
-  perc_string[0] = zclBattery_PercentageRemainig/2 / 100 % 10 + '0';
-  perc_string[1] = zclBattery_PercentageRemainig/2 / 10 % 10 + '0';
-  perc_string[2] = zclBattery_PercentageRemainig/2 % 10 + '0';
   
-  PaintSetWidth(16);
-  PaintSetHeight(48);
-  PaintSetRotate(ROTATE_90);
+  PaintSetWidth(22);
+  PaintSetHeight(25);
+  PaintSetRotate(ROTATE_0);
   PaintClear(UNCOLORED);
-  PaintDrawStringAt(0, 0, perc_string, &Font16, COLORED);
-
-  EpdSetFrameMemoryXY(PaintGetImage(), 47, 90, PaintGetWidth(), PaintGetHeight()); 
+ 
+  if (b <= 0) {
+    PaintDrawImage(bz, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 0 && b <= 13) {
+    PaintDrawImage(b0, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 13 && b <= 25) {
+    PaintDrawImage(b13, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 25 && b <= 38) {
+    PaintDrawImage(b38, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 38 && b <= 50) {
+    PaintDrawImage(b50, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 50 && b <= 63) {
+    PaintDrawImage(b63, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 63 && b <= 75) {
+    PaintDrawImage(b75, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 75 && b <= 87) {
+    PaintDrawImage(b87, 4, 0, 16, 25, COLORED);
+  }
+  if (b > 87) {
+    PaintDrawImage(b100, 4, 0, 16, 25, COLORED);
+  }
+  EpdSetFrameMemoryXY(PaintGetImage(), 96, 26, PaintGetWidth(), PaintGetHeight());
 }
 
 
 
 
 void epdZigbeeStatusData() {
+  PaintSetWidth(24);
+  PaintSetHeight(20);
+  PaintSetRotate(ROTATE_90);
+  PaintClear(UNCOLORED);
+  if ( bdbAttributes.bdbNodeIsOnANetwork ){
+    PaintDrawImage(IMAGE_ONNETWORK, 4, 4, 16, 16, COLORED);
+  } else {
+    PaintDrawImage(IMAGE_OFFNETWORK, 4, 4, 16, 16, COLORED);
+  }
+  EpdSetFrameMemoryXY(PaintGetImage(), 96, 206, PaintGetWidth(), PaintGetHeight());
+}
 
+
+
+void epdGraphData(void){
+  PaintSetWidth(20);
+  PaintSetHeight(101);
+  PaintSetRotate(ROTATE_270);
+  PaintClear(UNCOLORED);
+  int shag = 96;
+  
+  uint16 minActualT;
+  uint16 maxActualT;
+  uint16 minActualH;
+  uint16 maxActualH;
+  
+    /* find min */
+  minActualT = massDataT[0];
+
+  for (int i = 0; i < 24; i++)
+  {
+      if (massDataT[i] < minActualT && massDataT[i] != 0)
+          minActualT = massDataT[i];
+  }
+
+  /* find max */
+  maxActualT = massDataT[0];
+
+  for (int i = 0; i < 24; i++)
+  {
+      if (massDataT[i] > maxActualT && massDataT[i] !=0)
+          maxActualT = massDataT[i];
+  }
+  
+     /* find min */
+  minActualH = massDataH[0];
+
+  for (int i = 0; i < 24; i++)
+  {
+      if (massDataH[i] < minActualH && massDataH[i] != 0)
+          minActualH = massDataH[i];
+  }
+
+  /* find max */
+  maxActualH = massDataH[0];
+
+  for (int i = 0; i < 24; i++)
+  {
+      if (massDataH[i] > maxActualH && massDataH[i] !=0)
+          maxActualH = massDataH[i];
+  }
+
+  for(int i=0; i<24; i++)
+       {
+          int ch = (uint16)mapRange(minActualT, maxActualT, 0.0, 14.0, massDataT[i]);
+          
+          if(i == 23){
+            PaintDrawVerticalLine(shag, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+1, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+2, 4, ch+2, COLORED);
+          }else{
+            PaintDrawVerticalLine(shag, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+1, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+2, 4, ch+2, COLORED);
+            shag = shag-4;
+          }
+       }
+
+  EpdSetFrameMemoryXY(PaintGetImage(), 0, 14, PaintGetWidth(), PaintGetHeight()); 
+  
+  
+  PaintClear(UNCOLORED);
+  shag = 96;
+
+    for(int i=0; i<24; i++)
+       {
+          int ch = (uint16)mapRange(minActualH, maxActualH, 0.0, 14.0, massDataH[i]);
+          
+          if(i == 23){
+            PaintDrawVerticalLine(shag, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+1, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+2, 4, ch+2, COLORED);
+          }else{
+            PaintDrawVerticalLine(shag, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+1, 4, ch+2, COLORED);
+            PaintDrawVerticalLine(shag+2, 4, ch+2, COLORED);
+            shag = shag-4;
+          }
+       }
+
+  EpdSetFrameMemoryXY(PaintGetImage(), 0, 140, PaintGetWidth(), PaintGetHeight()); 
+  
 }
 
 
@@ -464,5 +922,59 @@ void user_delay_ms(unsigned int delaytime) {
     {
       asm("nop"); asm("nop"); asm("nop"); asm("nop"); asm("nop"); asm("nop");
     }
+  }
+}
+
+void conveyor(int *Arr, int n, int l)
+{
+     int i,j,c;
+     for (i=1; i<=l; i++)
+     {
+         c=Arr[0];
+         for (j=0; j<n-1; j++) Arr[j]=Arr[j+1];
+         Arr[n-1]=c;
+     }
+}
+
+void graphData(uint16 temp, uint16 hum){
+
+if(numDataT < 60){
+   amountDataT = amountDataT + temp;
+    numDataT++;
+  }else{
+    amountDataT = amountDataT + temp;
+    numDataT = 0;
+    
+    uint16 readyDataT = amountDataT / 60;
+    amountDataT = 0;
+    
+    if(numMassDataT < 24){
+      massDataT[numMassDataT] = readyDataT;
+      numMassDataT++;
+    }else if(numMassDataT == 24){
+      conveyor(massDataT, 24, 1); 
+      massDataT[23] = readyDataT;
+    }
+    changeData = true;
+  }
+
+if(numDataH < 60){
+   amountDataH = amountDataH + hum;
+    numDataH++;
+  }else{
+    amountDataH = amountDataH + hum;
+    numDataH = 0;
+    
+    uint16 readyDataH = amountDataH / 60;
+    amountDataH = 0;
+    
+    if(numMassDataH < 24){
+      massDataH[numMassDataH] = readyDataH;
+      numMassDataH++;
+    }else if(numMassDataH == 24){
+      conveyor(massDataH, 24, 1); 
+      massDataH[23] = readyDataH;
+    }
+    changeData = true;
   }
 }

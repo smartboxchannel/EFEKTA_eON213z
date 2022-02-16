@@ -35,17 +35,7 @@ void EpdInitFull(void) {
   
   EpdSendCommand(DATA_ENTRY_MODE_SETTING); //data entry mode
   EpdSendData(0x03);
-/*  
-  EpdSendCommand(SET_RAM_X_ADDRESS_START_END_POSITION); //set Ram-X address start/end position
-  EpdSendData(0x00);
-  EpdSendData(0x0F);    //0x0C-->(15+1)*8=128
-  
-  EpdSendCommand(SET_RAM_Y_ADDRESS_START_END_POSITION); //set Ram-Y address start/end position
-  EpdSendData(0xF9);   //0xF9-->(249+1)=250
-  EpdSendData(0x00);
-  EpdSendData(0x00);
-  EpdSendData(0x00);
-*/
+
   EpdSetMemoryArea(0, 0, epd_width - 1, epd_height - 1);
    
   EpdSendCommand(BORDER_WAVEFORM_CONTROL);
@@ -68,12 +58,8 @@ void EpdInitFull(void) {
   EpdSendData(lut_full_update[75]);
   
   EpdSetMemoryPointer(0, 0);
-//  WaitUntilIdle();
   
   EpdSetLutFull(lut_full_update);
-  
-  unsigned char image[672];
-  PaintPaint(image, 0, 0);
 }
 
 
@@ -86,9 +72,6 @@ void EpdInitPartial(void) {
     WaitUntilIdle();
         
     EpdSetLut(lut_partial_update);
-       
-    unsigned char image[672];
-    PaintPaint(image, 0, 0);
 }
 
 
@@ -344,14 +327,10 @@ void EpdDisplayFrame(void) {
 void EpdSleep(void) {
     EpdSendCommand(DEEP_SLEEP_MODE);
     EpdSendData(0x01);
-    DelayMs(100);
+    //DelayMs(100);
 }
 
 
 void EpdReset(void) {
   HalLcd_HW_Init();   
 }
-
-
-
-

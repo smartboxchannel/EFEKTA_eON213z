@@ -253,3 +253,23 @@ void PaintDrawFilledCircle(int x, int y, int radius, int colored) {
     } while(x_pos <= 0);
 }
 
+
+void PaintDrawImage(const unsigned char* imgData,int x, int y, int Width, int Height, int colored)
+{
+  
+  int i, j;
+  const unsigned char* prt = imgData;
+  for (j = 0; j < Height; j++) {
+    for (i = 0; i < Width; i++) {
+      if (* prt & (0x80 >> (i % 8))) {
+        PaintDrawPixel(x + i, y + j, colored);
+      }
+      if (i % 8 == 7) {
+        prt++;
+      }
+    }
+    if (Width % 8 != 0) {
+      prt++;
+    }
+  }
+}
