@@ -1150,18 +1150,6 @@
             <name>$PROJ_DIR$\..\Source\epdpaint.h</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Source\font16.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\Source\font24.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\Source\font8.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\Source\fonts.h</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\zstack-lib\hal_key.c</name>
         </file>
         <file>
@@ -1760,20 +1748,12 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\Tools\CC2530DB\f8wCoord.cfg</name>
-            <excluded>
-                <configuration>CHDTECH_DEV</configuration>
-                <configuration>PWS</configuration>
-            </excluded>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\Tools\CC2530DB\f8wEndev.cfg</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\Tools\CC2530DB\f8wRouter.cfg</name>
-            <excluded>
-                <configuration>CHDTECH_DEV</configuration>
-                <configuration>PWS</configuration>
-            </excluded>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\Tools\CC2530DB\f8wZCL.cfg</name>
