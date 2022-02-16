@@ -14,7 +14,6 @@
 #define COLORED     0
 #define UNCOLORED   1
 
-#include "fonts.h"
 extern    void PaintPaint(unsigned char* image, int width, int height);
 extern    void PaintClear(int colored);
 extern    int  PaintGetWidth(void);
@@ -26,8 +25,6 @@ extern    void PaintSetRotate(int rotate);
 extern    unsigned char* PaintGetImage(void);
 extern    void PaintDrawAbsolutePixel(int x, int y, int colored);
 extern    void PaintDrawPixel(int x, int y, int colored);
-extern    void PaintDrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored);
-extern    void PaintDrawStringAt(int x, int y, const char* text, sFONT* font, int colored);
 extern    void PaintDrawLine(int x0, int y0, int x1, int y1, int colored);
 extern    void PaintDrawHorizontalLine(int x, int y, int width, int colored);
 extern    void PaintDrawVerticalLine(int x, int y, int height, int colored);

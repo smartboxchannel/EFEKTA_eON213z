@@ -35,42 +35,6 @@ void PaintClear(int colored) {
     }
 }
 
-void PaintDrawStringAt(int x, int y, const char* text, sFONT* font, int colored) {
-    const char* p_text = text;
-    unsigned int counter = 0;
-    int refcolumn = x;
-    
-    /* Send the string character by character on EPD */
-    while (*p_text != 0) {
-        /* Display one character on EPD */
-        PaintDrawCharAt(refcolumn, y, *p_text, font, colored);
-        /* Decrement the column position by 16 */
-        refcolumn += font->Width;
-        /* Point on the next character */
-        p_text++;
-        counter++;
-    }
-}
-        
-void PaintDrawCharAt(int x, int y, char ascii_char, sFONT* font, int colored) {
-    int i, j;
-    unsigned int char_offset = (ascii_char - ' ') * font->Height * (font->Width / 8 + (font->Width % 8 ? 1 : 0));
-    const unsigned char* ptr = &font->table[char_offset];
-
-    for (j = 0; j < font->Height; j++) {
-        for (i = 0; i < font->Width; i++) {
-          if (*ptr & (0x80 >> (i % 8))) {     
-                PaintDrawPixel(x + i, y + j, colored);
-            }
-            if (i % 8 == 7) {
-                ptr++;
-            }
-        }
-        if (font->Width % 8 != 0) {
-            ptr++;
-        }
-    }
-}
 
 void PaintDrawPixel(int x, int y, int colored) {
     int point_temp;
