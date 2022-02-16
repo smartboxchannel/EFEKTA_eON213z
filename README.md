@@ -16,6 +16,8 @@ My new zigbee project. Wireless temperature and humidity mini sensor with electr
 
 More info at http://efektalab.com/eON213z
 
+Chinese version - https://github.com/wzqvip/EFEKTA_eON213z/tree/Chinese_version
+
 
 
 ## V1_R1
