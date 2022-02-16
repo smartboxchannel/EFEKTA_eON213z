@@ -114,3 +114,6 @@ Please, ensure the following:
 3. Your coordinator has free slots for direct connections.
 4. You permit joining on your coordinator.
 5. Your device did not join to other opened Zigbee network. When you press and hold the button, it should flash every 3-4 seconds. It means that the device in the joining state.
+
+
+## BOM
