@@ -1,9 +1,6 @@
 #ifndef SSD1675_H
 #define SSD1675_H
 
-
-//#include "epdif.h"
-
 // Display resolution
 #define EPD_WIDTH       122
 #define EPD_HEIGHT      268
