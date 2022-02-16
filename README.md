@@ -10,6 +10,8 @@ My new zigbee project. Wireless temperature and humidity mini sensor with electr
 
 #### Video: https://youtu.be/5huTVfVpZgs
 
+#### zigbee2mqtt.io/supported-devices: https://www.zigbee2mqtt.io/supported-devices/#s=efekta
+
 #### Telegram ZigDev - https://t.me/zigdev
 
 #### Telegram DiyDev - https://t.me/diy_devices
