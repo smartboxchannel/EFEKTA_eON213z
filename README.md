@@ -3,6 +3,8 @@ My new zigbee project. Wireless temperature and humidity mini sensor with electr
 
 ## It is forbidden to manufacture devices for commercial sale, only for personal use.
 
+## You can make your own pcb here - https://www.pcbway.com/setinvite.aspx?inviteid=550959
+
 
 #### Donate to me: https://paypal.me/efektalab or just buy to support this project
 
