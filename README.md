@@ -1,9 +1,15 @@
 # EFEKTA_eON213z
 My new zigbee project. Wireless temperature and humidity mini sensor with electronic ink display 2.13 inches, low power consumption, compact size, enclosure with magnets. The device use SHTC3 sensors, chip CC2530, battery CR2477. Support in zigbee2mqtt, zha.
 
-## It is forbidden to manufacture devices for commercial sale, only for personal use.
+### It is forbidden to manufacture devices for commercial sale, only for personal use.
+
+### You can purchase a ready-made device by writing to the mail hello@efektalab.com
+
+### Delivery is carried out worldwide.
 
 ## You can make your own pcb here - https://www.pcbway.com/setinvite.aspx?inviteid=550959
+
+
 
 
 #### Donate to me: https://paypal.me/efektalab or just buy to support this project
