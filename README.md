@@ -10,17 +10,11 @@ My new zigbee project. Wireless temperature and humidity mini sensor with electr
 ## You can make your own pcb here - https://www.pcbway.com/setinvite.aspx?inviteid=550959
 
 
-
-
-#### Donate to me: https://paypal.me/efektalab or just buy to support this project
-
-#### Sale: https://www.tindie.com/products/diyberk/indoor-climate-sensor-efekta-eon213-zigbee/
+#### Sale: 
 
 #### Video: https://youtu.be/5huTVfVpZgs
 
 #### zigbee2mqtt.io/supported-devices: https://www.zigbee2mqtt.io/supported-devices/#s=efekta
-
-#### Telegram ZigDev - https://t.me/zigdev
 
 #### Telegram DiyDev - https://t.me/diy_devices
 
